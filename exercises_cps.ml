@@ -105,7 +105,7 @@ type cont = ID | F of int * cont
 
 let rec apply_cont k f accu = match (k, accu) with
   | ID, accu -> accu 
-  | F (a, k), accu -> apply_cont k f (f accu a) (* TODO Getting a Type Error here, but can't see the problem? *)
+  | F (a, k), accu -> apply_cont k f (f accu a)
 and fold_left_defun f accu l k = match l with
   | [] -> apply_cont k f accu
   | a::l -> fold_left_defun f accu l (F (a, k))
@@ -154,7 +154,7 @@ let gcd_test_1 = gcd_test gcd_1
 
 (* let () = List.iter (fun x -> Printf.printf "%i " x) (gcd_test_1 @ gcd_test_2) *)
 
-(* TODO Problem 3. 
+(* Problem 3. 
 
 Environments are treated as function in interp_0.ml. 
 
@@ -165,13 +165,12 @@ implementation of environments?
 
 
 (* update : ('a -> 'b) * ('a * 'b) -> 'a -> 'b *) 
-let update(env, (x, v)) = fun y -> if x = y then v else env y
+let update (env, (x, v)) = fun y -> if x = y then v else env y
 
 (* mupdate : ('a -> 'b) * ('a * 'b) list -> 'a -> 'b *) 
-let rec mupdate(env, bl) = 
-    match bl with 
-    | [] -> env 
-    | (x, v) :: rest -> mupdate(update(env, (x, v)), rest)
+let rec mupdate (env, bl) = match bl with 
+  | [] -> env 
+  | (x, v) :: rest -> mupdate(update(env, (x, v)), rest)
 
 (* env_empty : string -> 'a *) 
 let env_empty = fun y -> failwith (y ^ " is not defined!\n")
@@ -179,6 +178,32 @@ let env_empty = fun y -> failwith (y ^ " is not defined!\n")
 (* env_init : (string * 'a) list -> string -> 'a *) 
 let env_init bl = mupdate(env_empty, bl) 
 
+(* Defunctionalise: *)
+
+type 'a env_cont = UPDATE of 'a env_cont * (string * 'a) | EMPTY
+
+let rec apply_cont_env env y = match (env, y) with
+  | EMPTY, y -> failwith (y ^ "is not defined!\n")
+  | UPDATE (env, (x, v)), y -> if x = y then v else apply_cont_env env y
+and mupdate_defun (env, bl)= match bl with
+  | [] -> apply_cont_env env
+  | (x, v) :: rest -> mupdate_defun(UPDATE(env, (x, v)), rest)
+
+let env_init_1 bl = mupdate_defun(EMPTY, bl)
+
+(* Build List Implementation *)
+
+type 'a env_tag = UPDATE_TAG of string * 'a
+type 'a env_cont_l = 'a env_tag list
+
+let rec apply_cont_env_tag env y = match env, y with
+  | [], y -> failwith (y ^ "is not defined!\n")
+  | UPDATE_TAG (x, v)::env, y -> if x = y then v else apply_cont_env_tag env y
+and mupdate_defun_tag (env, bl) = match bl with
+  | [] -> apply_cont_env_tag env
+  | (x,v)::rest -> mupdate_defun_tag (((UPDATE_TAG (x,v))::env), rest)
+
+let env_init_2 bl = mupdate_defun_tag ([], bl) (* List Continuations, as required *)
 
 (* Problem 4. 
 
