@@ -7,6 +7,8 @@ Timothy G. Griffin (tgg22@cam.ac.uk)
 
 Exercise Set 2. 
 
+Completed by: Daniel Green (dg683@cam.ac.uk)
+
 Topics : 
   a) Replacing tail-recursion with iteration. 
   b) CPS transform 
@@ -14,7 +16,7 @@ Topics :
 *) 
 
 
-(* Problem 1. 
+(* TODO Problem 1. 
 
    Again by hand, eliminate tail recursion from fold_left. 
 
@@ -27,13 +29,90 @@ Topics :
 (* fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a *) 
 let rec fold_left f accu l =
   match l with
-      [] -> accu
+  |   [] -> accu
   | a::l -> fold_left f (f accu a) l
 
 
 (* sum up a list *) 
-let sum1 = fold_left (+) 0 [1;2;3;4;5;6;7;8;9;10]  
 
+let fold_test f = f (+) 0 [1;2;3;4;5;6;7;8;9;10] 
+
+let sum1 = fold_test fold_left
+
+(*fold_left is already tail resursive, but not in CPS, therefore, must convert to CPS?*)
+
+(*
+let rec fold_left_named f accu l = match l with
+  | [] -> accu
+  | a::l -> let x = fold_left_named f (f accu a) l in x
+
+let rec fold_left_cps f l k = match l with
+  | [] -> k 
+  | a::l -> fold_left_cps f l (fun x -> f (k a) x)
+
+(+) 0 [1;2;3]
+(+) [1;2;3] (fun x -> 0 + x)
+(+) [2;3] (fun x` -> ((fun x -> 0 + x) 1) + x`)
+(+) [2;3] (fun x` -> (0 + 1) + x`)
+(+) [3] (fun x`` -> ((fun x` -> ((fun x -> 0 + x) 1) + x`) 2) + x``)
+(+) [3] (fun x`` -> ((0 + 1) + 2) + x``)
+(+) [] (fun x``` -> ((fun x`` -> ((fun x` -> ((fun x -> 0 + x) 1) + x`) 2) + x``) 3) + x```)
+(+) [] (fun x``` -> (((0 + 1) + 2) + 3) + x```)
+One too many fun statements - try use different k
+*)
+
+let rec fold_left_cps f accu l k = 
+  match l with
+  | [] -> k accu
+  | a::l -> fold_left_cps f accu l (fun x -> f (k x) a) (*f (k a) x; f x (k a)*)
+
+(* Example Call:
+(+) 0 [1;2] (fun x->x)
+(+) 0 [2] (fun x` -> ((fun x->x) x') + 1)
+(+) 0 [2] (fun x` -> x` + 1)
+(+) 0 [] (fun x`` -> ((fun x` -> ((fun x->x) x') + 1) x``) + 2)
+(+) 0 [] (fun x`` -> (x`` + 1) + 2)
+(fun x`` -> ((fun x` -> ((fun x->x) x') + 1) x``) + 2) 0
+(fun x`` -> (x`` + 1) + 2) 0
+(0 + 1) + 2
+*)
+
+let fold_left_1 f accu l = fold_left_cps f accu l (fun x->x)
+
+(* Thinking through factorial as another naturally tail recursive function
+let rec fact_t x acc = match x with
+  | 0 -> acc
+  | x -> fact_t (x-1) (acc*m)
+
+let rec fact_cps x k = match x with
+  | 0 -> k 1
+  | x -> fact_cps (x-1) (fun n -> k (x*n))
+
+3 (fun n->n)
+2 (fun n`->(fun n->n) (3*n`))
+2 (fun n`->3*n`)
+1 (fun n``->(fun n`->(fun n->n) (3*n`)) (2*n``))
+1 (fun n``->3*(2*n``))
+0 (fun n```->(fun n``->(fun n`->(fun n->n) (3*n`)) (2*n``)) (1*n```))
+0 (fun n```->3*(2*(1*n```)))
+(fun n```->(fun n``->(fun n`->(fun n->n) (3*n`)) (2*n``)) (1*n```)) 1
+(fun n```->3*(2*(1*n```))) 1
+(3*(2*(1*1))) 
+*)
+
+(*1. add constructor for each `fun`*)
+type cont = ID | F of int * cont
+
+let rec apply_cont k f accu = match (k, accu) with
+  | ID, accu -> accu 
+  | F (a, k), accu -> apply_cont k f (f accu a) (* TODO Getting a Type Error here, but can't see the problem? *)
+and fold_left_defun f accu l k = match l with
+  | [] -> apply_cont k f accu
+  | a::l -> fold_left_defun f accu l (F (a, k))
+
+let fold_left_2 f accu l = fold_left_defun f accu l ID
+
+let sum2 = fold_test fold_left_2
 
 (* Problem 2. 
 
@@ -51,11 +130,31 @@ let rec gcd(m, n) =
          then gcd(m, n - m)
          else gcd(m - n, n)
 
-let gcd_test_1 = List.map gcd [(24, 638); (17, 289); (31, 1889)] 
+let gcd_test f = List.map f [(24, 638); (17, 289); (31, 1889)]
 
+let gcd_test_0 = gcd_test gcd  
 
+(*Name Intermediate Function Calls*)
+let rec gcd_named(m,n) = 
+  if m = n then m
+  else if m < n then let a = gcd(m, n-m) in a
+  else let b = gcd(m-n,m) in b
 
-(* Problem 3. 
+(*Add continuation parameter*)
+let rec gcd_cps(m,n) k = 
+  if m=n then k m (*Apply Continutation to return values*)
+  else if m < n then gcd_cps (m, n-m) (fun a -> k a) (*In recursive calls, append result to continuation*)
+  else gcd_cps (m-n,n) (fun b -> k b)
+
+let gcd_1 (m,n) = gcd_cps (m,n) (fun x->x) (*Use identity as base continuation*)
+
+(* GCD is already a tail-recursive problem, so the general approach above can be simplified to just passing `k` instead of `(fun a -> k a)` at each stage *)
+
+let gcd_test_1 = gcd_test gcd_1
+
+(* let () = List.iter (fun x -> Printf.printf "%i " x) (gcd_test_1 @ gcd_test_2) *)
+
+(* TODO Problem 3. 
 
 Environments are treated as function in interp_0.ml. 
 
@@ -103,6 +202,35 @@ let rec fib m =
          then 1 
          else fib(m - 1) + fib (m - 2) 
 
-let map_test_1 = map(fib, [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10])
+let map_test f = f (fib, [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10])
 
+let map_test_1 = map_test map
 
+let rec map_named (f, l) = 
+  match l with
+  | [] -> []
+  | a :: rest ->  let x = f a in
+                  let xs = map(f, rest) in 
+                  x::xs
+                  
+let rec map_cps (f, l) k = 
+  match l with
+  | [] -> k []
+  | a::rest -> map_cps (f, rest) (fun x -> k ((f a)::x)) (*This seems to still work with `fib`, I think?*)
+
+let map_1 (f, l) = map_cps (f, l) (fun x->x)
+
+let map_test_2 = map_test map_1
+
+let printi x = Printf.printf "%i " x
+let print_qnum x = Printf.printf "%i)\n" x
+let newl = function _ -> print_endline ""
+
+let printlist xs = List.iter printi xs; newl ()
+
+let printq_i q t1 t2 = print_qnum q; printlist [t1]; printlist [t2]; newl ()
+let printq_l q t1 t2 = print_qnum q; printlist t1; printlist t2; newl ()
+
+let () =  printq_i 1 sum1 sum2;
+          printq_l 2 gcd_test_0 gcd_test_1; 
+          printq_l 4 map_test_1 map_test_2
