@@ -16,7 +16,7 @@ Topics :
 *) 
 
 
-(* TODO Problem 1. 
+(* Problem 1. 
 
    Again by hand, eliminate tail recursion from fold_left. 
 
@@ -114,6 +114,15 @@ let fold_left_2 f accu l = fold_left_defun f accu l ID
 
 let sum2 = fold_test fold_left_2
 
+(*
+Feedback:
+
+You’re not quite right with this one. Remember that CPS makes any recursive function tail recursive, but the question is asking us to remove tail recursion.
+
+We can discuss an approach to this in the supo if you like?
+
+*)
+
 (* Problem 2. 
 
    Apply (by hand) the CPS transformation to 
@@ -153,6 +162,13 @@ let gcd_1 (m,n) = gcd_cps (m,n) (fun x->x) (*Use identity as base continuation*)
 let gcd_test_1 = gcd_test gcd_1
 
 (* let () = List.iter (fun x -> Printf.printf "%i " x) (gcd_test_1 @ gcd_test_2) *)
+
+(*
+Feedback:
+
+Correct! And good to recognise that you can just pass k back to each gcd_cps call rather than (fun a -> k a).
+
+*)
 
 (* Problem 3. 
 
@@ -205,6 +221,14 @@ and mupdate_defun_tag (env, bl) = match bl with
 
 let env_init_2 bl = mupdate_defun_tag ([], bl) (* List Continuations, as required *)
 
+
+(*
+Feedback:
+
+Spot on.
+
+*)
+
 (* Problem 4. 
 
    Below is the code for (uncurried) map, with an test using fib. 
@@ -246,6 +270,14 @@ let rec map_cps (f, l) k =
 let map_1 (f, l) = map_cps (f, l) (fun x->x)
 
 let map_test_2 = map_test map_1
+
+
+(*
+Feedback:
+
+You’re not quite there with this one – there's something else that you need to do. I don’t want to spoil it ahead of the supo but take another look and see if you can spot what else is required?
+
+*)
 
 let printi x = Printf.printf "%i " x
 let print_qnum x = Printf.printf "%i)\n" x
