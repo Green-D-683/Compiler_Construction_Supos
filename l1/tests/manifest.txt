@@ -1,0 +1,3 @@
+sum1 6
+multisum1 27
+seq1 7

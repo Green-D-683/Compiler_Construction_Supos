@@ -20,6 +20,7 @@
               ppx_deriving_yojson 
               js_of_ocaml 
               js_of_ocaml-ppx 
+              ocamlbuild
             ]);
         };
       });
