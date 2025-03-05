@@ -1,7 +1,7 @@
 (ocamlyacc parser)
 (ocamllex lexer)
 (library
-  (name Lonelib)
+  (name L1lib)
   (modules
     Front_end
     Interp_0
@@ -26,5 +26,5 @@
 
 (executable
   (name l1)
-  (libraries Lonelib)
+  (libraries L1lib)
   (modules l1))

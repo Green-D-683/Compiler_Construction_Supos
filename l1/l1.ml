@@ -1,5 +1,7 @@
 (*  This is the main file. Again, lifted directly from the Slang interpreter *)
 
+open L1lib
+
 let error file action s = print_string ("\nERROR in " ^ file ^ " with " ^ action ^ " : " ^ s ^ "\n")
 
 let fatal_error file action s =
