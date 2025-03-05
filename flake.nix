@@ -14,7 +14,13 @@
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
           packages = with pkgs; [ ocaml ocamlformat ] ++
-            (with pkgs.ocamlPackages; [ dune_3 odoc ]);
+            (with pkgs.ocamlPackages; [ 
+              dune_3 
+              odoc 
+              ppx_deriving_yojson 
+              js_of_ocaml 
+              js_of_ocaml-ppx 
+            ]);
         };
       });
     };
